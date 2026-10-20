@@ -57,3 +57,12 @@ All six workstreams (A–F) built, merged to local `main` in elevva-server / ele
 - No "Import" button on the Profiles list (route `/profiles/import` + wizard work).
 - Search: semantic pre-filter not used on the JD Match page itself (only SubmitProfileModal).
 - Stale remote branches with unmerged commits: frontend `prod`, `rel/anuj`, `rel/parth`; ai-server `rel/v2`. Fully merged ones can be deleted (list in agent F report).
+
+## Status update (2026-10-20, night) — open items closed
+Done and pushed: vendor submission/stage emails fixed (admins + requirement owner + assigned users); Applicant Stats page + `GET /api/applicants/stats`; stage-change notifications (single, board, bulk); My Day is the landing page for non-admins who work with interviews/requirements; tracker "Joined" moves the pipeline stage (project dates asked); daily 09:00 IST backout-risk sweep (`JOINING_RISK_CRON=off` disables); Import CSV/Excel button on Profiles; Smart search adds up to 50 meaning-based fits to the JD Match pool; all 9 API suites now in `elevva-server/tests/e2e` (CI uses a replica-set Mongo); server CI lints the whole repo. Plan gate on board/My Day: decided not to gate (core recruiter screens, all plans).
+
+**Still waiting on the user (prod access is blocked for Claude by auto mode):**
+1. Render env: server `BOOKING_TOKEN_SECRET`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT=production`, `SALES_CONTACT_EMAIL`; AI server `SENTRY_DSN`, `SENTRY_ENVIRONMENT=production`.
+2. Prod scripts: vector index, embeddings backfill, duplicate scan, uploads → S3 copy (`scripts/migrateLocalUploadsToS3.js`).
+3. After the uploads copy succeeds: Claude removes `uploads/` from git (`git rm -r --cached uploads` + .gitignore). Old copies stay in git history.
+4. Optional: delete fully merged remote branches (not deploy branches).
