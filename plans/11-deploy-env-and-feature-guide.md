@@ -7,7 +7,7 @@
 |---|---|---|
 | `AI_SERVER_URL` | Public URL of the AI server, e.g. `https://<ai-service>.onrender.com` (no trailing slash) | Yes — PDF export, applicant match % and JD match use it |
 | `AI_INTERNAL_KEY` | Random secret, `openssl rand -hex 32`. **Same value on the AI server** | Yes |
-| `APPLICANT_PORTAL_ORG_SLUG` | EcoDash org's `slug` (Organizations collection) | Yes for applicant login |
+| `APPLICANT_PORTAL_ORG_SLUG` | `ecode-dash` | Yes for applicant login |
 | `VENDOR_SIGNUP_MODE` | `invite_only` (default) | Recommended |
 | `VENDOR_PORTAL_URL` | `https://app.ellevva.com` | Yes — links in vendor emails |
 | `APPLY_MATCH_THRESHOLD` | `70` (default) — match % at which "Apply" appears | Optional |
@@ -62,3 +62,11 @@ Then in **Roles & Permissions** give roles: `interests:read/update` (TA), `resum
 | Team reports | Sidebar → Team Reports (`/reports`) | TA or BD tab, one person or whole team, date range, compare with previous period, Excel export |
 | Resume templates | Settings → Resume Templates (`/settings/resume-templates`) | Duplicate a starter, edit HTML/CSS with live preview, publish, set default |
 | Export with template + Hide PII | Profiles list / profile view → Download | Choose template, keep "Hide PII" ticked (first name only, no phone/email/links). Unticking needs `profiles:export_with_pii`. PDFs are watermarked and count toward the daily limit |
+
+## 4. Seed log (2026-10-20, DB `Saas-Elevva-Mern`)
+- Permissions: added 10 (`submissions:*` ×4, `interests:*` ×2, `resume_templates:*` ×3, `profiles:export_with_pii`). Needed `submissions` added to the Permission resource enum.
+- `ecode-dash`: applicantPortal + vendorPortal enabled; 4 resume templates created and published.
+- JD match runs: organizationId backfilled on 271.
+- Profiles: skillsNormalized on 30,979 / 30,980; index `organizationId_1_skillsNormalized_1` built.
+- Open: unique index `org_profileCode_unique` cannot build — duplicate codes PRO-A004 ×2 and PRO-A570 ×2 in EcodeDash.
+- Pending: assign new permissions to roles.
