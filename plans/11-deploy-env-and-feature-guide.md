@@ -68,5 +68,6 @@ Then in **Roles & Permissions** give roles: `interests:read/update` (TA), `resum
 - `ecode-dash`: applicantPortal + vendorPortal enabled; 4 resume templates created and published.
 - JD match runs: organizationId backfilled on 271.
 - Profiles: skillsNormalized on 30,979 / 30,980; index `organizationId_1_skillsNormalized_1` built.
-- Open: unique index `org_profileCode_unique` cannot build — duplicate codes PRO-A004 ×2 and PRO-A570 ×2 in EcodeDash.
-- Pending: assign new permissions to roles.
+- Duplicate codes fixed: DUP-Mohammad PRO-A004 → PRO-A577, DUP-Siddharth PRO-A570 → PRO-A578; unique index `org_profileCode_unique` built.
+- Local `.env` MONGODB_URI updated to the Render value (same cluster/DB, newer password).
+- Pending (user, via Roles & Permissions UI): Admin → all new; TA Manager → interests + export_with_pii; TA Executive → interests; BD Manager → export_with_pii.
