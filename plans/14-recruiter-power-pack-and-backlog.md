@@ -37,3 +37,23 @@ User decisions (2026-10-21): build now → global search (most important), seman
 - WhatsApp Business · Gmail/Outlook sync · Client portal · Chrome extension · Job multiposting.
 - Contract staffing billing · incentives · DPDP "delete my data"/retention/audit export · public API, webhooks, SSO.
 - Staging environment (user chose direct to prod) · Brevo SPF/DKIM before bulk invites · Render AI 1 GB.
+
+## Status (2026-10-20, evening)
+All six workstreams (A–F) built, merged to local `main` in elevva-server / elevva-frontend / elevva-ai-server, plus the S3 client dedupe (`utils/s3Client.js`). Feature branches kept; worktrees removed.
+
+**Verified on merged main (local DB only):** server `npm test` 25/25, `npm run test:e2e` 211/211 (smoke 48, saas 75, bulk 12, applicant 76); feature API suites A 29, B 66, C 83, D 89 + saas 75, E 31 — all pass; frontend lint 0 errors, build OK, UI pytest 2/2 (33 + 46 checks); AI server pytest 93/93. S3 paths are not exercised locally (no AWS keys in tests).
+
+**Deploy steps (after push):**
+- Server env: `BOOKING_TOKEN_SECRET` (long random; else falls back to JWT_SECRET). Optional: `COPILOT_CACHE_HOURS`, `COPILOT_TIMEOUT_MS`, `SEMANTIC_SEARCH_ENABLED`, `EMBEDDING_MODEL`, `PROFILE_VECTOR_INDEX`, etc. AI server optional: `COPILOT_MODEL`.
+- Sentry: `SENTRY_DSN` + `SENTRY_ENVIRONMENT=production` on both Render services (if not done).
+- One-off scripts on prod server: `node scripts/createProfileVectorIndex.js --dry-run` then without; `node scripts/backfillProfileEmbeddings.js --dry-run` (shows cost) then without; `node scripts/scanDuplicateProfiles.js --dry-run` then without.
+
+**Open items found during the build:**
+- Vendor submission emails are broken: `services/vendor/vendorNotifyService.js` uses undefined `getAdmins`/`runWithTenant`/`User`/`sendEmail` → needs a decision on which org admins receive them.
+- Staff Applicants "Stats" button → `/applicants/stats` has no page.
+- `elevva-server/uploads/` has 91 committed files incl. 5 resumes + 11 user documents (PII in git); check DB references before removing.
+- Pipeline board moves send no notifications (existing stage endpoint doesn't); My Day not the landing page; no plan gate on board/My Day.
+- Backout high-risk alert only fires when a tracker is viewed/updated (no cron); tracker "Joined" doesn't move the pipeline stage.
+- No "Import" button on the Profiles list (route `/profiles/import` + wizard work).
+- Search: semantic pre-filter not used on the JD Match page itself (only SubmitProfileModal).
+- Stale remote branches with unmerged commits: frontend `prod`, `rel/anuj`, `rel/parth`; ai-server `rel/v2`. Fully merged ones can be deleted (list in agent F report).
