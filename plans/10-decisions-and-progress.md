@@ -33,3 +33,16 @@
 ### Found during P0
 - Frontend main (PR #107) sends a `recall` param plus vendor and source filters that only the **unmerged server `origin/vendor` commit** handles. Merge that server commit.
 - `getMyProfile` / `updateMyProfile` in the applicant controller use field names the Profile model doesn't have (`currentJobTitle`, `totalExperience`; the model has `currentRole`, `totalExp`). Fix this in the applicant portal v2 work.
+
+### Round 2 — committed on local main (2026-10-21)
+- [x] **Unified login (A):** `/api/auth/identify`, shared `utils/otpService.js`, `principalType` JWT claims, single `/login` page, `/vendor/login` redirects. Also fixed the applicant portal not unwrapping the `{data}` response envelope
+- [x] **Skill search (B):** `utils/skillAliases.js` (233 groups), `Profile.skillsNormalized` + hooks, typo `didYouMean`, `skillMatchCount` ranking. Security: no more populated password hashes. **Run `scripts/backfillSkillsNormalized.js`**
+- [x] **Saved JD matches + Paste JD (C):** JDMatchRun extended + tenant-scoped, runs list/reopen/rename/star/archive/share/stats, `/api/jd-match/extract`, drawer UI, did-you-mean chip. **Run `scripts/backfillJDMatchRunOrg.js`**
+- [x] **Team reports (D):** `/api/reports/{ta,bd}/team/summary|download`, Reports page at `/reports`. Fixed tenantScope aggregate ObjectId casting
+- [x] **Vendor gaps (E):** signup fields, invite-only (`VENDOR_SIGNUP_MODE`), VendorInvite, discovery_scheduled/done, approval gate, funnel counts, `/vendor/register` route
+- [ ] AI server hardening + new endpoints (F): in progress
+- [ ] Resume templates + Hide PII (G): in progress
+- [ ] Applicant v2 + Interest Inbox (H): in progress
+
+Env to set: `APPLICANT_PORTAL_ORG_SLUG`, `VENDOR_SIGNUP_MODE`, `VENDOR_PORTAL_URL`, `JD_MATCH_MINUTES_PER_PROFILE` (optional).
+Later model fields: `Organization.vendorSignupMode`, `Organization.jdMatchMinutesPerProfile`; Notification types `vendor_*`, `applicant_*`.
