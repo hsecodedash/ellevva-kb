@@ -40,9 +40,25 @@
 - [x] **Saved JD matches + Paste JD (C):** JDMatchRun extended + tenant-scoped, runs list/reopen/rename/star/archive/share/stats, `/api/jd-match/extract`, drawer UI, did-you-mean chip. **Run `scripts/backfillJDMatchRunOrg.js`**
 - [x] **Team reports (D):** `/api/reports/{ta,bd}/team/summary|download`, Reports page at `/reports`. Fixed tenantScope aggregate ObjectId casting
 - [x] **Vendor gaps (E):** signup fields, invite-only (`VENDOR_SIGNUP_MODE`), VendorInvite, discovery_scheduled/done, approval gate, funnel counts, `/vendor/register` route
-- [ ] AI server hardening + new endpoints (F): in progress
-- [ ] Resume templates + Hide PII (G): in progress
-- [ ] Applicant v2 + Interest Inbox (H): in progress
+- [x] **AI server (F):** routers, retries/timeouts, error envelope, `/render-pdf` (Playwright), `/embed`, `/redact-pii`, `/match/batch`, `/health/ready`; Docker deploy with Chromium, tesseract and fonts; pinned deps; 73 pytest tests
+- [x] **Resume templates + Hide PII (G):** template builder with live preview, 4 starter templates, export with watermark and download limit. **Run `scripts/seedResumeTemplates.js <slug> --publish`**
+- [x] **Applicant v2 + Interest Inbox (H):** match-gated Apply/Interested, RequirementInterest, TA inbox at `/interests`, vendor submissions feed the inbox
+
+### Verification (2026-10-21)
+- Unit/stub tests: all agent suites pass
+- API smoke test on a throwaway local Mongo + AI container: **48/48**
+- Headless browser smoke test (staff + applicant flows, 6 new pages): **14/14**
+- Bugs found and fixed by the smoke tests:
+  - **ActivityLog writes failed silently since the multi-tenant change**, so the daily download limit was never enforced (tenant plugin filled organizationId after validation)
+  - Lazy queries passed to `runWithTenant` ran outside the context (applicant OTP verify, identify, vendor notify)
+  - Permission resource enum missing `interests` / `resume_templates`
+  - Requirement titles showed employment type; editor preview clipped; vendor count NaN; Header React warning
+
+### Next
+- Run `node scripts/seedPermissions.js`, then give roles `interests:*`, `resume_templates:*`, `profiles:export_with_pii`
+- Phase 5: self-serve org signup + Free/Starter/Pro/Enterprise plans
+- Candidate data-model consolidation (Application)
+- Notification settings per user; vendor submission backfill into the inbox
 
 Env to set: `APPLICANT_PORTAL_ORG_SLUG`, `VENDOR_SIGNUP_MODE`, `VENDOR_PORTAL_URL`, `JD_MATCH_MINUTES_PER_PROFILE` (optional).
 Later model fields: `Organization.vendorSignupMode`, `Organization.jdMatchMinutesPerProfile`; Notification types `vendor_*`, `applicant_*`.
