@@ -42,3 +42,33 @@ Profile additions: `applicant: { availability: "active"|"open"|"not_looking", av
 
 ## Env
 `APPLICANT_ALERTS_ENABLED` (default false), `APPLICANT_INVITE_BATCH_MAX` (300), `APPLICANT_REINVITE_DAYS` (90).
+
+## Contract changes (server agent, as built)
+All responses keep the usual `{success, message, data, errors}` envelope (payload keys below are inside `data`).
+
+**Registration**
+- `POST /api/applicant/register/request`: `phone` required (10–15 digits after stripping spaces, `+`, `-`, `()`); `consent` must be `true`. Invalid input → **400** `{errors:{fullName?, email?, phone?, consent?}}`. Otherwise always **200** with the same generic message (new email, existing profile, or no portal profile).
+- `POST /api/applicant/register/verify`: new profile → **201**, existing profile (login code) → **200**; body = `/otp/verify` shape plus `isNew` (`token, principalType:"applicant", isNew, applicant:{id,name,email,code}`). Profile limit reached → **403** `code: PLAN_LIMIT_REACHED` with a candidate-friendly message (plan not mentioned). Wrong/expired/used code → 401.
+- New applicant profiles start with `applicant.availability = "active"`, `candidateSource: "Applicant Portal"`, tag `source:applicant`, resume placeholder `pending-upload` (counts as "no resume" in strength).
+
+**Resume** `POST /api/applicant/resume` (multipart `file`, PDF/DOC/DOCX, ≤10 MB; wrong type/size → 400) → `{resumeUrl, suggested, parsed, parseError?, message}`. `resumeUrl` is a 15-min presigned URL, `null` when S3 isn't configured. `suggested` keys are PATCH-able profile fields (`fullName, phone, currentLocation, preferredLocation, currentRole, currentCompany, totalExp, noticePeriod, expectedCTC, linkedinUrl, githubUrl, portfolioUrl, techStack, description`) plus `skills` as **string[]**. AI down → `parsed:false, suggested:{}` (still 200, resume saved).
+
+**Home** `GET /api/applicant/home` → `{strength:{score, missing:[{key,label}]}, availability, topMatches, applications:{total, byStage:{<stage label>: count}}, nextInterview}`. `topMatches` items have the same shape as `/requirements` items. `nextInterview` = `null` or `{id, stage, stageLabel, at, requirement:{id, requirementCode, workRole, techStack}}`. Strength keys: `resume, resumeFresh, skills, totalExp, currentRole, noticePeriod, expectedCTC, preferredLocations, workModes, linkedinUrl`.
+
+**Preferences** `PATCH /api/applicant/preferences` → `{preferences:{availability, preferredRoles, preferredLocations, workModes, expectedCTC, noticePeriod, jobAlerts:{enabled}}, strength}`. Arrays accept arrays or comma strings (max 10, de-duplicated). `workModes` must be Profile work-mode values (`Remote, Hybrid, On-site, Permanent, C2H, Freelancer-8hrs, Freelancer-4hrs, Part-Time`). Errors → 400 `{errors:{availability?|workModes?|jobAlerts?}}`. Side effects: `preferredLocation` = locations joined by ", ", `workMode` = first work mode; turning job alerts on clears an earlier unsubscribe.
+- `GET /api/applicant/me` profile now also has `expectedCTC, workMode, resume.{originalName,uploadedAt}, applicant.{availability, availabilityUpdatedAt, preferredRoles, preferredLocations, workModes, jobAlerts.enabled, updatedByApplicantAt}`; `PATCH /api/applicant/profile` also accepts `expectedCTC`.
+
+**Opportunities** `GET /api/applicant/requirements` accepts `q, location, workMode, minMatch, sort=match|newest, page, limit` (old `search`, `minScore` still work); response adds `sort`. `sort=match` (default) ranks across all open roles (up to 200), not just the page. `GET /api/applicant/requirements/:id` returns `why:{matched, missing}` both at top level and inside `requirement`.
+
+**Applications** `GET /api/applicant/my-interests` items add `stage, stageLabel, canWithdraw, timeline:[{stage,label,at}]`. Stage keys: `interested, applied, under_review, shortlisted, in_process, submitted_to_client, interview, offer, joined, not_selected, withdrawn`. `statusLabel` can be `Withdrawn`. `POST /api/applicant/my-interests/:id/withdraw` → 200 `{interest:{id,status:"withdrawn",statusLabel}}` (idempotent); after a recruiter shortlisted/moved it → **409** `code: CANNOT_WITHDRAW`; not mine → 404. Applying/interest again after withdrawing reopens the same application (status `new`).
+- Staff side: `RequirementInterest.status` can now be `withdrawn` (candidate only). Staff can't change a withdrawn application (409; bulk skips with reason `withdrawn`); `/api/interests/summary` rows include `withdrawn` count.
+
+**Unsubscribe** `GET /api/public/applicant/unsubscribe?token=` → HTML page when `Accept: text/html`, else JSON. Link base: `PUBLIC_API_URL`, else Render's `RENDER_EXTERNAL_URL`, else the request host.
+
+**Re-engage (staff)** — admin role (or super admin) + `profiles:update`, company must have `applicantPortal` (else 403 `code: MODULE_NOT_ENABLED`).
+- `GET /api/applicant-reengage/stats` → `{stats:{withEmail, neverInvited, invitedRecently, signedIn, optedOut, readyToInvite}, batchMax, reinviteDays}`.
+- `POST /api/applicant-reengage/invite {limit?, dryRun?}` → `{message, result:{dryRun, requested, selected, sent, failed, batchMax, reinviteDays, sample:[{id,name,email}]}}`. `limit` defaults to 100, capped at `batchMax`. Skips: opted out, placeholder emails, duplicate copies, invited or signed in within `reinviteDays`, repeated emails. Rate limit: 20 runs/hour.
+
+**TA profile list** `GET /api/profiles?availability=active,open,not_looking` filters; profile documents (list and detail) include the `applicant` sub-document (`availability`, `updatedByApplicantAt`, ...).
+
+**Env** `APPLICANT_ALERTS_ENABLED` (false), `APPLICANT_INVITE_BATCH_MAX` (300), `APPLICANT_REINVITE_DAYS` (90), `PUBLIC_API_URL` (optional, for unsubscribe links). Job alerts run Mondays 09:00 IST.
