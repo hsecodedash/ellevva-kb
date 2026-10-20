@@ -66,3 +66,8 @@ Done and pushed: vendor submission/stage emails fixed (admins + requirement owne
 2. Prod scripts: vector index, embeddings backfill, duplicate scan, uploads → S3 copy (`scripts/migrateLocalUploadsToS3.js`).
 3. After the uploads copy succeeds: Claude removes `uploads/` from git (`git rm -r --cached uploads` + .gitignore). Old copies stay in git history.
 4. Optional: delete fully merged remote branches (not deploy branches).
+
+## Incident + cleanup (2026-10-20, late night)
+- The 1536-dim embeddings backfill pushed the free 512 MB Atlas cluster over quota (writes blocked app-wide). Fixed by: archiving + dropping `talent-document` (raw CV text copies, 242 MB, write-only; archive at `s3://elevva-resume-storage/archives/talent-document-2026-10-20-35590.jsonl.gz`), AI server no longer writes it (`SAVE_RAW_RESUME_TEXT=true` re-enables), embeddings now 512-dim packed float32 (~2 KB/profile). DB after full backfill: ~293 MB of 512 MB.
+- All 91 `uploads/` files copied to S3 and untracked from git (still in git history). `/uploads/...` falls back to S3.
+- Lesson: on the free cluster, every backfill/dry-run must show storage, not just cost (`scripts/dbSizeReport.js` lists sizes).
